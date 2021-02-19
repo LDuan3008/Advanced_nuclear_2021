@@ -422,6 +422,10 @@ def core_model(case_dic, tech_list):
         
         #----------------------------------------------------------------------
         # Shfting demand
+        # Capacity defines limits on abs(dispatch) (could be positive/negative);
+        # node_to should not be defined;
+        # If you use max_capacity, then there must be a fixed_cost;
+        # If only to specify the maximum capacity without a fixed_cost, specify the capacity;
 
         elif tech_type == 'shift_load':
             if tech_dic.get('capacity',-1) >= 0:
@@ -435,33 +439,30 @@ def core_model(case_dic, tech_list):
                     constraints += [ capacity <= max_capacity ]
                     constraint_list += [tech_name + ' capacity_le_max']
 
-            dispatch = cvx.Variable(num_time_periods)
-            energy_stored = cvx.Variable(num_time_periods)
-            constraints += [ cvx.abs(energy_stored) <= capacity ]
+            dispatch = cvx.Variable(num_time_periods)  # How much shifted at that time step, the amount that goes to the shift reservior; 
+            constraints += [ cvx.abs(dispatch) <= capacity ] # The capacity limit is on dispatch, which can go both postiive and negative;
+            energy_shifted = cvx.Variable(num_time_periods) # How much total demand is been shifted; 
+            # constraints += [ cvx.abs(energy_shifted) <= capacity ]
             constraint_list += [tech_name + ' shift_load_le_capacity']
                 
             for i in range(num_time_periods):
 
-                constraints += [energy_stored[(i+1) % num_time_periods] == energy_stored[i] + dispatch[i]]
+                constraints += [energy_shifted[(i+1) % num_time_periods] == energy_shifted[i] + dispatch[i]]
                 constraint_list += [tech_name + ' storage_balance_step_'+str(i).zfill(5)]
                 
             capacity_dic[tech_name] = capacity
             dispatch_dic[tech_name] = dispatch
-            stored_dic[tech_name] = energy_stored
+            stored_dic[tech_name] = energy_shifted
             
-            # Positive means add extra demands;
-            # Negative means reduce demands;
-            node_balance[node_to] += -dispatch
-            if 'node_from' in tech_dic:
-                node_balance[node_from] += -dispatch
-            else:
-                node_balance[node_to ] += -dispatch
+            # Positive of dispatch means add extra demands, shifted to;
+            # Negative of dispatch means reduce demands, shifted from;
+            node_balance[node_from] += -dispatch
 
             if 'var_cost' in tech_dic:
-                fnc2min += cvx.sum(cvx.abs(energy_stored) * tech_dic['var_cost'])
+                fnc2min += cvx.sum(cvx.abs(energy_shifted) * tech_dic['var_cost'])
             
             if 'fixed_co2' in tech_dic:
-                fnc2min += capacity * tech_dic['fixed_cost'] * num_time_periods     
+                fnc2min += capacity * tech_dic['fixed_cost'] * num_time_periods   
 
 
                 
