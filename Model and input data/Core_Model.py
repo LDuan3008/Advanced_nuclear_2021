@@ -1,6 +1,17 @@
 # -*- coding: utf-8 -*-
 
 #
+
+"""
+Lei updated on Feb 11, 2021;
+To fix some issue with load_shift. 
+
+Lei updated on Feb 8, 2021;
+Add the ability of load shifting;
+Add CO2 constraint and total co2 emissions;
+"""
+
+
 '''
 
 File name: Core_Model.py
@@ -99,6 +110,9 @@ def core_model(case_dic, tech_list):
     dispatch_dic = {} # dictionary of dispatch decision variables for inflow to tech
     stored_dic = {} # dictionary of storage amounts
     totCO2e = 0.0 # Lei added for CO2 constraint
+    totDisp = 0.0 # Lei added for total fossil-fuel-based dispatches
+    flag_emissions = False
+    flag_dispatch = False
     
     num_time_periods = case_dic['num_time_periods']
                   
@@ -152,12 +166,18 @@ def core_model(case_dic, tech_list):
         #----------------------------------------------------------------------
         # unmet demand 
         # (n_capacity = 0 and n_dispatch = 0 and n_dispatch = 1)
-        # Assumed to be unmet demand (lost load) with variable cost
+        # Assumed to be unmet demand (lost load) with variable cost.
+        # The mean quantity of lost_load can be specified with 'mean_dispatch'.
+        # In this regard: mean_dispatch = 1 - reliability.
         
         elif tech_type == 'lost_load':
             dispatch = cvx.Variable(num_time_periods) 
             constraints += [ dispatch >= 0 ]
             constraint_list += [tech_name + ' dispatch_ge_0']
+            if tech_dic.get('mean_dispatch',-1) >= 0:
+                constraints += [ cvx.sum(dispatch) / num_time_periods == tech_dic['mean_dispatch'] ]
+                constraint_list += [tech_name + ' mean_dispatch']
+
             dispatch_dic[tech_name] = dispatch
             node_balance[node_to] += dispatch # note that lost load is like a phantom source of pure variable capacity
             fnc2min +=  cvx.sum(dispatch * tech_dic['var_cost'])
@@ -239,7 +259,8 @@ def core_model(case_dic, tech_list):
             node_balance[node_to] += dispatch
             if 'var_co2' in tech_dic:
                 fnc2min +=  cvx.sum(dispatch * tech_dic['var_cost']) + cvx.sum(dispatch * case_dic['co2_price'] * tech_dic['var_co2']) 
-                totCO2e += cvx.sum(dispatch * tech_dic['var_co2']) 
+                totCO2e += cvx.sum(dispatch * tech_dic['var_co2'])
+                if flag_emissions == False: flag_emissions = True 
             else:
                 fnc2min +=  cvx.sum(dispatch * tech_dic['var_cost'])
             
@@ -247,6 +268,10 @@ def core_model(case_dic, tech_list):
                 fnc2min += capacity * tech_dic['fixed_cost'] * num_time_periods + capacity * tech_dic['fixed_co2'] * case_dic['co2_price']
             else:
                 fnc2min += capacity * tech_dic['fixed_cost'] * num_time_periods
+            
+            if tech_name in ['natgas', 'natgas_ccs']:
+                totDisp += cvx.sum(dispatch)
+                if flag_dispatch == False: flag_dispatch = True
         
         #----------------------------------------------------------------------
         # Storage
@@ -444,6 +469,10 @@ def core_model(case_dic, tech_list):
             energy_shifted = cvx.Variable(num_time_periods) # How much total demand is been shifted; 
             # constraints += [ cvx.abs(energy_shifted) <= capacity ]
             constraint_list += [tech_name + ' shift_load_le_capacity']
+
+            if tech_dic.get('max_capacity',-1) >= 0:
+                constraints += [ cvx.sum(cvx.abs(energy_shifted)) <= tech_dic['max_capacity'] ]
+                constraint_list += [tech_name + ' max_capacity']
                 
             for i in range(num_time_periods):
 
@@ -471,12 +500,15 @@ def core_model(case_dic, tech_list):
 
     #%%======================================================================
     # Lei added, co2 emission cap
-    if case_dic['co2_constraint'] >= 0:
+    if case_dic['co2_constraint'] >= 0 and flag_emissions == True:
         constraints += [ totCO2e <= case_dic['co2_constraint'] ]
-    else:
-        constraints += [ totCO2e <= 1e24 ]
-    constraint_list += [ 'co2_emissions_le_constraint' ] 
+        constraint_list += [ 'co2_emissions_le_constraint' ] 
     
+    if case_dic['dispatch_constraint'] >= 0 and flag_dispatch == True:
+        constraints += [ totDisp <= case_dic['dispatch_constraint'] ]
+        constraint_list += [ 'dispatch_le_constraint' ] 
+    
+
     #%%======================================================================
     # Now add all of the node balances to the constraints
     
@@ -501,7 +533,19 @@ def core_model(case_dic, tech_list):
         if prob.status != 'solved' and prob.status != 'optimal':
             raise cvx.error.SolverError
 
-    dispatch_dic['co2_emissions'] = totCO2e.value # Lei added
+    # Lei added
+    if flag_emissions == True:
+        dispatch_dic['co2_emissions'] = totCO2e.value
+    else:
+        dispatch_dic['co2_emissions'] = totCO2e
+    
+
+    if flag_dispatch == True:
+        dispatch_dic['fossil_dispatch'] = totDisp.value
+    else:
+        dispatch_dic['fossil_dispatch'] = totDisp
+    
+
 
 #    # problem is solved
 #    #======================================================================
@@ -550,7 +594,3 @@ def core_model(case_dic, tech_list):
         print ('    elapsed time = ',end_time - start_time)
             
     return constraint_list,constraints,prob,capacity_dic,dispatch_dic,stored_dic    
-    
-    
-    
-    

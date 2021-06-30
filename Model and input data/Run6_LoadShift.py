@@ -48,6 +48,7 @@ num_time_periods = update_timenum(case_dic)
 case_dic['num_time_periods'] = num_time_periods
 case_name_default = 'ShiftLoad'
 case_dic['co2_constraint'] = 0
+case_dic['dispatch_constraint'] = -1
 
 ### Set cycle values
 unmet_demand_cost = [10**(-3), 10**(-2.8), 10**(-2.6), 10**(-2.4), 10**(-2.2),

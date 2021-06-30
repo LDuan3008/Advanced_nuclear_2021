@@ -12,7 +12,7 @@ def GetNameList():
     return TwoLettersCode
 
 
-def GetCFsName(region_name):
+def GetCFsName(region_name, source='MERRA2'):
     FullDemandList = {'DZ': 'demand_series_Dan_normalized_to_1_mean_Algeria.csv', 'AR': 'demand_series_Dan_normalized_to_1_mean_Argentina.csv',
                       'AU': 'demand_series_Dan_normalized_to_1_mean_Australia.csv', 'BR': 'demand_series_Dan_normalized_to_1_mean_Brazil.csv',
                       'CA': 'demand_series_Dan_normalized_to_1_mean_Canada.csv', 'CL': 'demand_series_Dan_normalized_to_1_mean_Chile.csv',
@@ -35,8 +35,17 @@ def GetCFsName(region_name):
                       'GB': 'demand_series_Dan_normalized_to_1_mean_United Kingdom.csv', 'US': 'demand_series_Dan_normalized_to_1_mean_United States.csv',
                       'VE': 'demand_series_Dan_normalized_to_1_mean_Venezuela.csv', 'VN': 'demand_series_Dan_normalized_to_1_mean_Vietnam.csv'}
     DemandName = FullDemandList[region_name]
-    SolarCFsName = '20201218_' + str(region_name) + '_mthd3_solar.csv'
-    WindCFsName = '20201218_' + str(region_name) + '_mthd3_wind.csv'
+    
+    if source == 'MERRA2':
+        SolarCFsName = '20201218_' + str(region_name) + '_mthd3_solar.csv'
+        WindCFsName = '20201218_' + str(region_name) + '_mthd3_wind.csv'
+    elif source == 'ERA5':
+        SolarCFsName = ['20201218_' + str(region_name) + '_mthd3_solar.csv', '20210617_' + str(region_name) + '_mthd3_1980-2020_solar.csv']
+        WindCFsName  = ['20201218_' + str(region_name) + '_mthd3_wind.csv',  '20210617_' + str(region_name) + '_mthd3_1980-2020_wind.csv']
+    else:
+        print (f'source {source} not recognized')
+        stop 
+
     return DemandName, SolarCFsName, WindCFsName
 
 
@@ -64,3 +73,51 @@ def update_timenum(case_dic):
             ).days +
             (case_dic['hour_end'] - case_dic['hour_start'] ) + 1)
     return num_time_periods
+
+
+
+
+
+
+
+def update_series_ERA5(case_dic, tech_dic, case_name): 
+
+    num_time_periods = update_timenum(case_dic) 
+    
+    series1 = read_csv_dated_data_file(case_dic['year_start'],case_dic['month_start'],case_dic['day_start'],case_dic['hour_start'],
+                                       case_dic['year_end'],  case_dic['month_end'],  case_dic['day_end'],  case_dic['hour_end'],
+                                       case_dic['data_path'], case_name[0]) 
+    series2 = read_csv_dated_data_file(case_dic['year_start'],case_dic['month_start'],case_dic['day_start'],case_dic['hour_start'],
+                                       case_dic['year_end'],  case_dic['month_end'],  case_dic['day_end'],  case_dic['hour_end'],
+                                       case_dic['data_path'], case_name[1]) 
+    
+    # Interpolate to 0.5
+    time_old = np.arange(num_time_periods) 
+
+    time_new = time_old + 0.5 
+
+    series2_new = np.interp(time_new, time_old, series2) 
+
+    # Scale
+    series2_new = series2_new * np.average(series1)/np.average(series2_new) 
+
+    tech_dic['series'] = series2_new 
+
+    
+
+def update_series_ERA52(case_dic, tech_dic, case_name): 
+
+    num_time_periods = update_timenum(case_dic) 
+
+    series2 = read_csv_dated_data_file(case_dic['year_start'],case_dic['month_start'],case_dic['day_start'],case_dic['hour_start'],
+                                       case_dic['year_end'],  case_dic['month_end'],  case_dic['day_end'],  case_dic['hour_end'],
+                                       case_dic['data_path'], case_name[1]) 
+    
+    # Interpolate to 0.5
+    time_old = np.arange(num_time_periods) 
+
+    time_new = time_old + 0.5 
+
+    series2_new = np.interp(time_new, time_old, series2) 
+
+    tech_dic['series'] = series2_new 

@@ -33,6 +33,117 @@ def nonan(input):
 #                 'system_cost':'black',
 #                 'lost_load_var':'cadetblue'}
 
+
+
+
+def test1(default_case_name, summary_table, type):
+
+    NumOfCases = len(summary_table)
+    xlist = np.array([100, 98.0, 96.0, 94.0, 92.0, 90.0, 88.0, 86.0, 84.0, 82.0, 80.0, 78.0, 76.0, 74.0, 72.0, 70.0, 68.0, 66.0, 64.0, 62.0, 60.0, 58.0, 56.0, 54.0, 52.0, 50.0, 48.0, 46.0, 44.0, 42.0, 40.0, 38.0, 36.0, 34.0, 32.0, 30.0, 28.0, 26.0, 24.0, 22.0, 20.0, 18.0, 16.0, 14.0, 12.0, 10.0, 8.0,  6.0,  4.0,  2.0,  1.0, 0.1, 0.01, 0.001, 0.0])/100
+    x_axis = 1 - 0.5**( np.log(xlist)/np.log(0.2) )
+    xticks_addition_org = np.array([50.0, 10.0, 1.0])/100
+    xticks_addition_cov = 1 - 0.5**( np.log(xticks_addition_org)/np.log(0.2) )
+    xticks = np.r_[[0, 0.5, 0.75, 1.0], xticks_addition_cov]
+
+    for idx in range(NumOfCases):
+        CurrentCase = summary_table[idx]
+        starting_idx = 0
+
+        if type == 1:
+            y_lists = [np.array(CurrentCase['natgas_tot']), 
+                       np.array(CurrentCase['natgas_ccs_tot']), 
+                       np.array(CurrentCase['solar_fix']), 
+                       np.array(CurrentCase['wind_fix']), 
+                       np.array(CurrentCase['conventional_nuclear_fix']), 
+                       np.array(CurrentCase['storage_fix']),
+                       np.array(CurrentCase['lost_load_var'])]
+            y_color = ['black', 'grey', 'wheat', 'skyblue', 'brown', 'violet', 'cadetblue']
+            ax1 = plt.subplot(111)
+            ax1.stackplot(x_axis, y_lists, colors=y_color)
+            ax1.plot(x_axis, np.array(CurrentCase['system_cost']), color='black', linestyle='--')
+            ax1.plot(x_axis, np.zeros(len(x_axis)), color='black')
+            ax1.set_xticks( xticks )
+            ax1.set_xlim(0, 1)
+            ax1.set_ylim(0, 0.14)
+            # plt.show()
+            plt.savefig(default_case_name+str(idx)+'_cost.png', dpi=1500)
+            # plt.savefig(default_case_name+str(idx)+'_cost.ps')
+            plt.clf()
+        if type == 2:
+            y_lists = [np.array(CurrentCase['natgas_tot']), 
+                       np.array(CurrentCase['natgas_ccs_tot']), 
+                       np.array(CurrentCase['solar_fix']), 
+                       np.array(CurrentCase['wind_fix']), 
+                       np.array(CurrentCase['storage_fix']),
+                       np.array(CurrentCase['nuclear_fix'])+np.array(CurrentCase['nuclear_generator_REAmatch_fix']),
+                       np.array(CurrentCase['heat_storage_fix'])+np.array(CurrentCase['nuclear_generator_TESmatch_fix']),
+                       np.array(CurrentCase['lost_load_var'])]
+            y_color = ['black', 'grey', 'wheat', 'skyblue', 'violet', 'tomato', 'indigo', 'cadetblue']
+            ax1 = plt.subplot(111)
+            ax1.stackplot(x_axis, y_lists, colors=y_color)
+            ax1.plot(x_axis, np.array(CurrentCase['system_cost']), color='black', linestyle='--')
+            ax1.plot(x_axis, np.zeros(len(x_axis)), color='black')
+            ax1.set_xticks( xticks )
+            ax1.set_xlim(0, 1)
+            ax1.set_ylim(0, 0.14)
+            # plt.show()
+            plt.savefig(default_case_name+str(idx)+'_cost.png', dpi=1500)
+            # plt.savefig(default_case_name+str(idx)+'_cost.ps')
+            plt.clf()
+        
+        if type == 3:
+            y_lists = [np.array(CurrentCase['natgas_tot']), 
+                       np.array(CurrentCase['natgas_ccs_tot']), 
+                       np.array(CurrentCase['solar_fix']), 
+                       np.array(CurrentCase['wind_fix']), 
+                       np.array(CurrentCase['conventional_nuclear_fix']), 
+                       np.array(CurrentCase['storage_fix']),
+                       np.array(CurrentCase['nuclear_fix'])+np.array(CurrentCase['nuclear_generator_REAmatch_fix']),
+                       np.array(CurrentCase['heat_storage_fix'])+np.array(CurrentCase['nuclear_generator_TESmatch_fix']),
+                       np.array(CurrentCase['lost_load_var'])
+                       ]
+            y_color = ['black', 'grey', 'wheat', 'skyblue', 'brown', 'violet', 'tomato', 'indigo', 'cadetblue']
+            ax1 = plt.subplot(111)
+            ax1.stackplot(x_axis, y_lists, colors=y_color)
+            ax1.plot(x_axis, np.array(CurrentCase['system_cost']), color='black', linestyle='--')
+            ax1.plot(x_axis, np.zeros(len(x_axis)), color='black')
+            ax1.set_xticks( xticks )
+            ax1.set_xlim(0, 1)
+            ax1.set_ylim(0, 0.14)
+            # plt.show()
+            plt.savefig(default_case_name+str(idx)+'_cost.png', dpi=1500)
+            # plt.savefig(default_case_name+str(idx)+'_cost.ps')
+            plt.clf()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def Scenario1Fig1(default_case_name, summary_table, type):
 
     NumOfCases = len(summary_table)
@@ -114,6 +225,9 @@ def Scenario1Fig1(default_case_name, summary_table, type):
             # plt.savefig(default_case_name+name+str(idx)+'_cost.png', dpi=1500)
             plt.savefig(default_case_name+str(idx)+'_cost.ps')
             plt.clf()
+
+
+
 
 
 
@@ -213,7 +327,7 @@ def Scenario3Fig1(info, CaseIdx):
         ax1 = plt.subplot(111, projection=ccrs.PlateCarree())
         ax1.add_feature(cfeature.COASTLINE)
         ax1.add_feature(cfeature.BORDERS)
-        ax1.set_extent([-180, 180, -90, 90], crs=ccrs.PlateCarree())
+        ax1.set_extent([-180, 180, -60, 90], crs=ccrs.PlateCarree())
         mp = ax1.pcolor(lon, lat, np.ma.masked_equal(var, 0), cmap=col, norm=colors.Normalize(vmin=0, vmax=1.5), transform=ccrs.PlateCarree())
         ax1.contourf(lon, lat, mask_array_new, colors='none', hatches=['.'*5], transform=ccrs.PlateCarree())
         plt.colorbar(mp, ax=ax1, extend='max', shrink=0.5, orientation='vertical')
@@ -288,7 +402,6 @@ def Scenario3Fig2_tes(tes_cap):
 
 
 def Scenario3Fig3(sys_cost_diff):
-
     f_axis = cdms.open('SWGDN.nc')
     v=f_axis('SWGDN')
     lat, lon=v.getAxis(1), v.getAxis(2)
@@ -307,7 +420,7 @@ def Scenario3Fig3(sys_cost_diff):
         ax1 = plt.subplot(111, projection=ccrs.PlateCarree())
         ax1.add_feature(cfeature.COASTLINE)
         ax1.add_feature(cfeature.BORDERS)
-        ax1.set_extent([-180, 180, -90, 90], crs=ccrs.PlateCarree())
+        ax1.set_extent([-180, 180, -60, 90], crs=ccrs.PlateCarree())
         mp = ax1.pcolor(lon, lat, np.ma.masked_equal(var, 0), cmap=col, norm=colors.Normalize(vmin=0, vmax=12), transform=ccrs.PlateCarree())
         ax1.contourf(lon, lat, mask_array_new, colors='none', hatches=['.'*5], transform=ccrs.PlateCarree())
         plt.colorbar(mp, ax=ax1, extend='max', shrink=0.5, orientation='vertical')
@@ -580,6 +693,7 @@ def showTableS2(dict, DicNew):
                       16.0, 14.0, 12.0, 10.0, 8.0,  6.0,  4.0,  2.0,  1.0, 0.1, 0.01, 0.001, 0.0])
     ylist = 100 - xlist
 
+    # """
     # Find cty size
     f_axis = cdms.open('SWGDN.nc')
     v=f_axis('SWGDN')
@@ -602,7 +716,6 @@ def showTableS2(dict, DicNew):
     for ii in range(len(lat)):
         for jj in range(len(lon)):
             cell_areas[ii,jj] = 2*np.pi*R_earth**2*np.absolute(np.sin(bounds_lat[ii,1]*np.pi/180)-np.sin(bounds_lat[ii,0]*np.pi/180))*np.absolute(bounds_lon[jj,1]-bounds_lon[jj,0])/360
-            
     tot_area_list = []
     for idx_idx in range(len(find_idx_list)):
         new_mask = np.copy(mask)
@@ -616,49 +729,25 @@ def showTableS2(dict, DicNew):
         current_info = dict[cty_idx]
         tota_a = tot_area_list[cty_idx] / 1e6
         mean_s = np.mean(current_info['solar series'])
-        std_s = np.std(current_info['solar series'])
+        std_s  = np.std(current_info['solar series'])
         mean_w = np.mean(current_info['wind series'])
-        std_w = np.std(current_info['wind series'])
-
+        std_w  = np.std(current_info['wind series'])
         # When start using Nuclear;
         for sub_idx in range(len(ylist)):
             if current_info['nuclear_cap'][sub_idx] > 0:
                 find_n = current_info['nuclear_cap'][sub_idx]
                 find_c = ylist[sub_idx]
                 break
-
+        find_05x = -1
         for sub_idx in range(len(ylist)):
             if current_info['nuclear_cap'][sub_idx] > 0.5:
-                find_50 = ylist[sub_idx]
+                find_05x = ylist[sub_idx]
                 break
-        for sub_idx in range(len(ylist)):
-            if current_info['nuclear_cap'][sub_idx] > 0.8:
-                find_80 = ylist[sub_idx]
-                break
+        find_99x = -1
         for sub_idx in range(len(ylist)):
             if current_info['nuclear_cap'][sub_idx] > 0.99:
-                find_99 = ylist[sub_idx]
+                find_99x = ylist[sub_idx]
                 break
-        find_50p = np.nan
-        DispatchNuclearPercentage= DicNew[cty_idx]
-        for sub_idx in range(len(DispatchNuclearPercentage)):
-            if DispatchNuclearPercentage[sub_idx] >= 50:
-                find_50p = ylist[sub_idx]
-                break
-        find_80p = np.nan
-        DispatchNuclearPercentage= DicNew[cty_idx]
-        for sub_idx in range(len(DispatchNuclearPercentage)):
-            if DispatchNuclearPercentage[sub_idx] >= 80:
-                find_80p = ylist[sub_idx]
-                break
-        find_99p = np.nan
-        DispatchNuclearPercentage= DicNew[cty_idx]
-        for sub_idx in range(len(DispatchNuclearPercentage)):
-            if DispatchNuclearPercentage[sub_idx] >= 99:
-                find_99p = ylist[sub_idx]
-                break
-        
-        print (find_50, find_80, find_99, find_50p, find_80p, find_99p)
         new_array_outputs[cty_idx, 0] = tota_a
         new_array_outputs[cty_idx, 1] = mean_s
         new_array_outputs[cty_idx, 2] = std_s
@@ -666,27 +755,38 @@ def showTableS2(dict, DicNew):
         new_array_outputs[cty_idx, 4] = std_w
         new_array_outputs[cty_idx, 5] = find_n
         new_array_outputs[cty_idx, 6] = find_c
-        new_array_outputs[cty_idx, 7] = find_50
-        new_array_outputs[cty_idx, 8] = find_80
-        new_array_outputs[cty_idx, 9] = find_99
-        new_array_outputs[cty_idx, 10] = find_50p
-        new_array_outputs[cty_idx, 11] = find_80p
-        new_array_outputs[cty_idx, 12] = find_99p
+        new_array_outputs[cty_idx, 7] = find_05x
+        new_array_outputs[cty_idx, 8] = find_99x
 
-    # Save as CSV table
-    # np.savetxt("TableS2.csv", new_array_outputs, fmt='%.5f', delimiter=",")
+    # TableS2_showTableS2_1_210508: EIA cost
+    # TableS2_showTableS2_2_210508: $4000/kW cost
+    import pickle
+    with open('TableS2_showTableS2_1_210508.pickle', 'wb') as handle:
+        pickle.dump(new_array_outputs, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    # """
 
 
-    # # Only wind and base data
-    # size = new_array_outputs[:, 0]
-    # ax1=plt.subplot(111)
-    # ax1.scatter(new_array_outputs[:, 6], new_array_outputs[:, 3], c='royalblue', s=size/1e4, edgecolors='black', linewidths=0.1, alpha=0.8)
-    # ax1.plot(np.r_[0, 0], np.r_[0.0, 0.6], color='black', linestyle='--', linewidth='1')
-    # ax1.set_xlim(-5, 100)
-    # ax1.set_ylim(0, 0.6)
-    # # plt.show() 
+    stop 
+
+
+    # Not used below
+    with open('TableS2_showTableS2_210508.pickle', 'rb') as handle:
+        new_array_outputs = pickle.load(handle)
+    with open('TableS2_showTableS2_210508.pickle', 'rb') as handle:
+        new_array_outputs = pickle.load(handle)
+    # Only wind and base data
+    size = new_array_outputs[:, 0]
+    ax1=plt.subplot(111)
+    ax1.scatter(new_array_outputs[:, 6], new_array_outputs[:, 3], c='royalblue', s=size/1e4, edgecolors='black', linewidths=0.1, alpha=0.8)
+    ax1.plot(np.r_[0, 0], np.r_[0.0, 0.6], color='black', linestyle='--', linewidth='1')
+    ax1.set_xlim(-5, 100)
+    ax1.set_ylim(0, 0.6)
+    plt.show() 
     # plt.savefig('wind_co2.ps') 
-    # plt.clf()
+    plt.clf()
+
+    stop 
+
 
     # # Check Cty names
     # size = new_array_outputs[:, 0]

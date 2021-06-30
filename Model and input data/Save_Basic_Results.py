@@ -87,8 +87,8 @@ def save_basic_results(case_dic, tech_list, constraints,prob_dic,capacity_dic,di
                 factor = 1.0
             results_time_dic[tech_name + ' potential'] = item['series']*factor
     node_price_dic = prob_dic['node_price']
-    for node in node_price_dic:
-        results_time_dic[node+' price'] = node_price_dic[node]
+    # for node in node_price_dic: # Lei Duan
+        # results_time_dic[node+' price'] = node_price_dic[node]
     for item in dispatch_dic:
         results_time_dic[item] = dispatch_dic[item]
     for item in stored_dic:
@@ -111,6 +111,9 @@ def save_basic_results(case_dic, tech_list, constraints,prob_dic,capacity_dic,di
     input_time_df = pd.DataFrame(input_time_dic)
     results_case_df = pd.DataFrame(list(results_case_dic.items()))
     results_tech_df = pd.DataFrame(list(results_tech_dic.items()))
+
+    print (results_time_dic) 
+
     results_time_df = pd.DataFrame(results_time_dic)
     
     #--------------------------------------------------------------------------
