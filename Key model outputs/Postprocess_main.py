@@ -1,3 +1,8 @@
+import numpy as np
+import pickle, os
+from Postprocess_func import Get_Table, get_case_dispatch
+from scipy import stats
+import matplotlib.pyplot as plt
 
 
 if __name__ == "__main__":
@@ -5,12 +10,6 @@ if __name__ == "__main__":
 
     # %%
     """
-    import numpy as np
-    import pickle, os
-    from Postprocess_func import Get_Table, get_case_dispatch
-    from scipy import stats
-    import matplotlib.pyplot as plt
-
     data_find = '/Volumes/My Passport/MEM_AdvNuc/SingleCountryResults3/'
     table_AdvaNuclear_EIA,  table_ConvNuclear_EIA  = [], []
     table_AdvaNuclear_4000, table_ConvNuclear_4000 = [], []
@@ -109,18 +108,18 @@ if __name__ == "__main__":
     # -------------------------------
 
 
-    # Plot
-    xlist = np.array([100, 98, 96, 94, 92, 90, 88, 86, 84, 82, 80, 78, 76, 74, 72, 70, 68, 66, 64, 62, 
-                       60, 58, 56, 54, 52, 50, 48, 46, 44, 42, 40, 38, 36, 34, 32, 30, 28, 26, 24, 22, 
-                       20, 18, 16, 14, 12, 10, 8,  6,  4,  2,  1, 0.1, 0.01, 0.001, 0])/100
-    x_axis = 1 - 0.5**( np.log(xlist)/np.log(0.2) )
-    xticks_addition_org = np.array([50.0, 10.0, 1.0])/100
-    xticks_addition_cov = 1 - 0.5**( np.log(xticks_addition_org)/np.log(0.2) )
-    xticks = np.r_[[0, 0.5, 0.75, 1.0], xticks_addition_cov]
+    # # Plot
+    # xlist = np.array([100, 98, 96, 94, 92, 90, 88, 86, 84, 82, 80, 78, 76, 74, 72, 70, 68, 66, 64, 62, 
+    #                    60, 58, 56, 54, 52, 50, 48, 46, 44, 42, 40, 38, 36, 34, 32, 30, 28, 26, 24, 22, 
+    #                    20, 18, 16, 14, 12, 10, 8,  6,  4,  2,  1, 0.1, 0.01, 0.001, 0])/100
+    # x_axis = 1 - 0.5**( np.log(xlist)/np.log(0.2) )
+    # xticks_addition_org = np.array([50.0, 10.0, 1.0])/100
+    # xticks_addition_cov = 1 - 0.5**( np.log(xticks_addition_org)/np.log(0.2) )
+    # xticks = np.r_[[0, 0.5, 0.75, 1.0], xticks_addition_cov]
 
-    def nonan(input):
-        input[input==0] = np.nan
-        return input
+    # def nonan(input):
+    #     input[input==0] = np.nan
+    #     return input
 
     # # Costs
     # def plot_cost(CurrentCase, default_case_name):
@@ -284,7 +283,7 @@ if __name__ == "__main__":
     #     plt.clf()
     # Scenario1Fig3(table_AdvaNuclear_EIA, 8)
     # Scenario1Fig3(table_AdvaNuclear_4000, 4)
-    stop 
+
     # """
 
 
@@ -344,7 +343,7 @@ if __name__ == "__main__":
         auto_plot_cost(table_AdvaNuclear_EIA[cty_idx],  table_ConvNuclear_EIA[cty_idx],  f'EIA_Dis{str(TwoLettersCode[cty_idx])}')
         auto_plot_cost(table_AdvaNuclear_4000[cty_idx], table_ConvNuclear_4000[cty_idx], f'C4000_Dis{str(TwoLettersCode[cty_idx])}')
         auto_plot_cost(table_AdvaNuclear_2000[cty_idx], table_ConvNuclear_2000[cty_idx], f'C2000_Dis{str(TwoLettersCode[cty_idx])}')
-    """
+    # """
 
 
     # %%
@@ -1371,9 +1370,375 @@ if __name__ == "__main__":
     output_array = np.array([storage_cap_NoNuclear, storage_cap_EIA, storage_cap_c4k])
     np.savetxt("TableS4.csv", output_array.T, fmt='%.5f', delimiter=",")
     # """
+    # %%
 
+
+
+    """
+    # Revision round 2
+    # Future scenarios, basecase PGP, DAC
+    # No unmet demand
+    data_find = '/Volumes/My Passport/MEM_AdvNuc/Nuclear_revision_2nd_round/'
+    table_AdvaNuclear_4000_future = []
+    table_AdvaNuclear_4000_PGP = []
+    table_AdvaNuclear_4000_DAC = []
+    TwoLettersCode = ['US', 'CN', 'DE', 'ZA', 'AU', 'BR']
+    co2_cons = np.array([1e24, 98, 96, 94, 92, 90, 88, 86, 84, 82, 
+                           80, 78, 76, 74, 72, 70, 68, 66, 64, 62, 
+                           60, 58, 56, 54, 52, 50, 48, 46, 44, 42, 
+                           40, 38, 36, 34, 32, 30, 28, 26, 24, 22, 
+                           20, 18, 16, 14, 12, 10, 8,  6,  4,  2,  1, 0.1, 0.01, 0.001, 0])
+
+    # tech_list_future = ['natgas', 'natgas_ccs', 'solar', 'wind', 'storage', 'advanced_nuclear', 'lost_load']
+    # tech_list_pgp = ['natgas', 'natgas_ccs', 'solar', 'wind', 'storage', 'advanced_nuclear', 'lost_load', 'pgp']
+    # tech_list_dac = ['natgas', 'natgas_ccs', 'solar', 'wind', 'storage', 'advanced_nuclear', 'lost_load', 'dac']
+    # for cty_idx in TwoLettersCode:
+    #     print (cty_idx)
+    #     case_name1 = f'U_AdvaNuclear4000_future_Year2019_{cty_idx}_Co2Cons'; 
+    #     table_AdvaNuclear_4000_future += [Get_Table(case_name1, repeat_list = co2_cons, data_path = data_find, tech_name_list=tech_list_future)]
+    #     case_name2 = f'U_AdvaNuclear4000_PGP_Year2019_{cty_idx}_Co2Cons'; 
+    #     table_AdvaNuclear_4000_PGP += [Get_Table(case_name2, repeat_list = co2_cons, data_path = data_find, tech_name_list=tech_list_pgp)]
+    #     case_name3 = f'U_AdvaNuclear4000_DAC_Year2019_{cty_idx}_Co2Cons'; 
+    #     table_AdvaNuclear_4000_DAC += [Get_Table(case_name3, repeat_list = co2_cons, data_path = data_find, tech_name_list=tech_list_dac)]
+    # with open('Scenario10_210929.pickle', 'wb') as handle:
+    #     pickle.dump([table_AdvaNuclear_4000_future, table_AdvaNuclear_4000_PGP, table_AdvaNuclear_4000_DAC], handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    # table_AdvaNuclear_EIA_nud = []
+    # table_AdvaNuclear_4000_nud = []
+    # tech_list_nud = ['natgas', 'natgas_ccs', 'solar', 'wind', 'storage', 'advanced_nuclear']
+    # for cty_idx in TwoLettersCode:
+    #     print (cty_idx)
+    #     case_name1 = f'No_unmet_demand_U_AdvaNuclear_Year2019_{cty_idx}_Co2Cons'; 
+    #     table_AdvaNuclear_EIA_nud += [Get_Table(case_name1, repeat_list = co2_cons, data_path = data_find, tech_name_list=tech_list_nud)]
+    #     case_name2 = f'No_unmet_demand_U_AdvaNuclear4000_Year2019_{cty_idx}_Co2Cons'; 
+    #     table_AdvaNuclear_4000_nud += [Get_Table(case_name2, repeat_list = co2_cons, data_path = data_find, tech_name_list=tech_list_nud)]
+    # with open('Scenario12_210929.pickle', 'wb') as handle:
+    #     pickle.dump([table_AdvaNuclear_EIA_nud, table_AdvaNuclear_4000_nud], handle, protocol=pickle.HIGHEST_PROTOCOL)
+    # stop 
+
+
+    with open('Scenario10_210929.pickle', 'rb') as handle:
+        table_AdvaNuclear_4000_future, table_AdvaNuclear_4000_PGP, table_AdvaNuclear_4000_DAC = pickle.load(handle) 
+
+    with open('Scenario12_210929.pickle', 'rb') as handle:
+        table_AdvaNuclear_EIA_nud, table_AdvaNuclear_4000_nud = pickle.load(handle) 
+
+
+    # Plot
+    xlist = np.array([100, 98, 96, 94, 92, 90, 88, 86, 84, 82, 80, 78, 76, 74, 72, 70, 68, 66, 64, 62, 
+                       60, 58, 56, 54, 52, 50, 48, 46, 44, 42, 40, 38, 36, 34, 32, 30, 28, 26, 24, 22, 
+                       20, 18, 16, 14, 12, 10, 8,  6,  4,  2,  1, 0.1, 0.01, 0.001, 0])/100
+    x_axis = 1 - 0.5**( np.log(xlist)/np.log(0.2) )
+    xticks_addition_org = np.array([50.0, 10.0, 1.0])/100
+    xticks_addition_cov = 1 - 0.5**( np.log(xticks_addition_org)/np.log(0.2) )
+    xticks = np.r_[[0, 0.5, 0.75, 1.0], xticks_addition_cov]
+
+    def nonan(input):
+        input[input==0] = np.nan
+        return input
+
+    # Costs
+    def plot_cost(CurrentCase, default_case_name):
+        ax = plt.subplot(111)
+        try:
+            y_lists = [np.array(CurrentCase['natgas_tot']), 
+                   np.array(CurrentCase['natgas_ccs_tot']), 
+                   np.array(CurrentCase['solar_fix']), 
+                   np.array(CurrentCase['wind_fix']), 
+                   np.array(CurrentCase['nuclear_fix'])+np.array(CurrentCase['nuclear_generator_REAmatch_fix']),
+                   np.array(CurrentCase['heat_storage_fix'])+np.array(CurrentCase['nuclear_generator_TESmatch_fix']),
+                   np.array(CurrentCase['storage_fix']),
+                   np.array(CurrentCase['to_PGP_fix']) + np.array(CurrentCase['PGP_storage_fix']) + np.array(CurrentCase['from_PGP_fix']),
+                   np.array(CurrentCase['lost_load_var'])]
+            y_color = ['black', 'grey', 'wheat', 'skyblue', 'tomato', 'indigo', 'plum', 'green', 'cadetblue']
+        except:
+            try:
+                y_lists = [np.array(CurrentCase['natgas_tot']), 
+                    np.array(CurrentCase['natgas_ccs_tot']), 
+                    np.array(CurrentCase['solar_fix']), 
+                    np.array(CurrentCase['wind_fix']), 
+                    np.array(CurrentCase['nuclear_fix'])+np.array(CurrentCase['nuclear_generator_REAmatch_fix']),
+                    np.array(CurrentCase['heat_storage_fix'])+np.array(CurrentCase['nuclear_generator_TESmatch_fix']),
+                    np.array(CurrentCase['storage_fix']),
+                    np.array(CurrentCase['dac_tot']),
+                    np.array(CurrentCase['lost_load_var'])]
+                y_color = ['black', 'grey', 'wheat', 'skyblue', 'tomato', 'indigo', 'plum', 'green', 'cadetblue']
+            except:
+                try:
+                    y_lists = [np.array(CurrentCase['natgas_tot']), 
+                        np.array(CurrentCase['natgas_ccs_tot']), 
+                        np.array(CurrentCase['solar_fix']), 
+                        np.array(CurrentCase['wind_fix']), 
+                        np.array(CurrentCase['nuclear_fix'])+np.array(CurrentCase['nuclear_generator_REAmatch_fix']),
+                        np.array(CurrentCase['heat_storage_fix'])+np.array(CurrentCase['nuclear_generator_TESmatch_fix']),
+                        np.array(CurrentCase['storage_fix']),
+                        np.array(CurrentCase['lost_load_var'])]
+                    y_color = ['black', 'grey', 'wheat', 'skyblue', 'tomato', 'indigo', 'plum', 'cadetblue']
+                except:
+                    y_lists = [np.array(CurrentCase['natgas_tot']), 
+                        np.array(CurrentCase['natgas_ccs_tot']), 
+                        np.array(CurrentCase['solar_fix']), 
+                        np.array(CurrentCase['wind_fix']), 
+                        np.array(CurrentCase['nuclear_fix'])+np.array(CurrentCase['nuclear_generator_REAmatch_fix']),
+                        np.array(CurrentCase['heat_storage_fix'])+np.array(CurrentCase['nuclear_generator_TESmatch_fix']),
+                        np.array(CurrentCase['storage_fix'])]
+                    y_color = ['black', 'grey', 'wheat', 'skyblue', 'tomato', 'indigo', 'plum']
+
+
+        ax.stackplot(x_axis, y_lists, colors=y_color)
+        ax.plot(x_axis, np.array(CurrentCase['system_cost']), color='black', linestyle='--')
+        ax.plot(x_axis, np.zeros(len(x_axis)), color='black')
+        ax.set_xlabel('Emissions reduction constration (%)', fontsize=14)
+        ax.set_ylabel('System cost ($/kWh)', fontsize=14)
+        ax.set_title('With TES case', fontsize=18, y=1.05)
+        ax.xaxis.labelpad = 8
+        ax.yaxis.labelpad = 8
+        ax.set_xticks( xticks )
+        ax.set_xticklabels( ['0', '80', '96', '100', '50', '90', '99'] )
+        ax.set_xlim(0, 1)
+        # ax.set_ylim(0, 0.12)
+        ax.set_ylim(0, 0.10)
+        # plt.show()
+        plt.savefig(default_case_name+'.ps')
+        plt.clf()
+
+    for cty_idx in range(len(TwoLettersCode)):
+        # plot_cost(table_AdvaNuclear_4000_future[cty_idx], f'Nuclear_with_TES_4000_future_{TwoLettersCode[cty_idx]}')
+        # plot_cost(table_AdvaNuclear_4000_PGP[cty_idx], f'Nuclear_with_TES_4000_PGP_{TwoLettersCode[cty_idx]}')
+        # plot_cost(table_AdvaNuclear_4000_DAC[cty_idx], f'Nuclear_with_TES_4000_DAC_{TwoLettersCode[cty_idx]}')
+        plot_cost(table_AdvaNuclear_EIA_nud[cty_idx], f'table_AdvaNuclear_EIA_nud_{TwoLettersCode[cty_idx]}')
+        plot_cost(table_AdvaNuclear_4000_nud[cty_idx], f'table_AdvaNuclear_4000_nud_{TwoLettersCode[cty_idx]}')
+
+    # """
+    # %%
+
+
+
+
+    """
+    # Revision round 2
+    # Sweep through DAC cost and PGP cost
+    data_find = '/Volumes/My Passport/MEM_AdvNuc/Nuclear_revision_2nd_round/'
+    table_AdvaNuclear_4000_PGP = []
+    table_AdvaNuclear_4000_DAC = []
+    TwoLettersCode = ['US', 'CN', 'DE', 'ZA', 'AU', 'BR']
+    pgp_cost_list = ['0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', '0.8', '0.9', '1']
+    dac_cost_list = ['0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', '0.8', '0.9', '1.0']
+
+    # tech_list_pgp = ['natgas', 'natgas_ccs', 'solar', 'wind', 'storage', 'advanced_nuclear', 'lost_load', 'pgp']
+    # tech_list_dac = ['natgas', 'natgas_ccs', 'solar', 'wind', 'storage', 'advanced_nuclear', 'lost_load', 'dac']
+    # for cty_idx in TwoLettersCode:
+    #     print (cty_idx)
+    #     case_name2 = f'PGP_Year2019_{cty_idx}_pgp'
+    #     table_AdvaNuclear_4000_PGP += [Get_Table(case_name2, repeat_list = pgp_cost_list, data_path = data_find, tech_name_list=tech_list_pgp)]
+    #     case_name3 = f'DAC_Year2019_{cty_idx}_dac'
+    #     table_AdvaNuclear_4000_DAC += [Get_Table(case_name3, repeat_list = dac_cost_list, data_path = data_find, tech_name_list=tech_list_dac)]
+    # with open('Scenario11_210929.pickle', 'wb') as handle:
+    #     pickle.dump([table_AdvaNuclear_4000_PGP, table_AdvaNuclear_4000_DAC], handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    with open('Scenario11_210929.pickle', 'rb') as handle:
+        table_AdvaNuclear_4000_PGP, table_AdvaNuclear_4000_DAC = pickle.load(handle) 
+
+
+    # Plot
+    x_axis = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+    xticks = ['0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', '0.8', '0.9', '1.0']
+
+    # Costs
+    def plot_cost(CurrentCase, default_case_name):
+        ax = plt.subplot(111)
+        try:
+            y_lists = [np.array(CurrentCase['natgas_tot']), 
+                np.array(CurrentCase['natgas_ccs_tot']), 
+                np.array(CurrentCase['solar_fix']), 
+                np.array(CurrentCase['wind_fix']), 
+                np.array(CurrentCase['nuclear_fix'])+np.array(CurrentCase['nuclear_generator_REAmatch_fix']),
+                np.array(CurrentCase['heat_storage_fix'])+np.array(CurrentCase['nuclear_generator_TESmatch_fix']),
+                np.array(CurrentCase['storage_fix']),
+                np.array(CurrentCase['to_PGP_fix']) + np.array(CurrentCase['PGP_storage_fix']) + np.array(CurrentCase['from_PGP_fix']),
+                np.array(CurrentCase['lost_load_var'])]
+            y_color = ['black', 'grey', 'wheat', 'skyblue', 'tomato', 'indigo', 'plum', 'green', 'cadetblue']
+        except:
+            y_lists = [np.array(CurrentCase['natgas_tot']), 
+                np.array(CurrentCase['natgas_ccs_tot']), 
+                np.array(CurrentCase['solar_fix']), 
+                np.array(CurrentCase['wind_fix']), 
+                np.array(CurrentCase['nuclear_fix'])+np.array(CurrentCase['nuclear_generator_REAmatch_fix']),
+                np.array(CurrentCase['heat_storage_fix'])+np.array(CurrentCase['nuclear_generator_TESmatch_fix']),
+                np.array(CurrentCase['storage_fix']),
+                np.array(CurrentCase['dac_tot']),
+                np.array(CurrentCase['lost_load_var'])]
+            y_color = ['black', 'grey', 'wheat', 'skyblue', 'tomato', 'indigo', 'plum', 'green', 'cadetblue']
+
+        ax.stackplot(x_axis, y_lists, colors=y_color)
+        ax.plot(x_axis, np.array(CurrentCase['system_cost']), color='black', linestyle='--')
+        ax.plot(x_axis, np.zeros(len(x_axis)), color='black')
+        ax.set_xlabel('Emissions reduction constration (%)', fontsize=14)
+        ax.set_ylabel('System cost ($/kWh)', fontsize=14)
+        ax.set_title('With TES case', fontsize=18, y=1.05)
+        ax.xaxis.labelpad = 8
+        ax.yaxis.labelpad = 8
+        ax.set_xlim(0.1, 1)
+        ax.set_ylim(0, 0.10)
+        # plt.show()
+        plt.savefig(default_case_name+'.ps')
+        plt.clf()
+
+    for cty_idx in range(len(TwoLettersCode)):
+        plot_cost(table_AdvaNuclear_4000_PGP[cty_idx], f'Nuclear_with_TES_4000_PGP_{TwoLettersCode[cty_idx]}')
+        plot_cost(table_AdvaNuclear_4000_DAC[cty_idx], f'Nuclear_with_TES_4000_DAC_{TwoLettersCode[cty_idx]}')
+    # """
+
+
+
+    """
+    # Revision round 2
+    # Future scenarios, basecase PGP, DAC
+    # No unmet demand
+    data_find = '/Volumes/My Passport/MEM_AdvNuc/Nuclear_revision_2nd_round/'
+
+    table_AdvaNuclear_4000_replace_demand = []
+    table_AdvaNuclear_4000_replace_resour = []
+    TwoLettersCode = ['US', 'CN', 'DE', 'ZA', 'AU', 'BR']
+    co2_cons = np.array([1e24, 98, 96, 94, 92, 90, 88, 86, 84, 82, 
+                           80, 78, 76, 74, 72, 70, 68, 66, 64, 62, 
+                           60, 58, 56, 54, 52, 50, 48, 46, 44, 42, 
+                           40, 38, 36, 34, 32, 30, 28, 26, 24, 22, 
+                           20, 18, 16, 14, 12, 10, 8,  6,  4,  2,  1, 0.1, 0.01, 0.001, 0])
+
+    # tech_list_new = ['natgas', 'natgas_ccs', 'solar', 'wind', 'storage', 'advanced_nuclear', 'lost_load']
+    # for cty_idx in TwoLettersCode:
+    #     print (cty_idx)
+    #     case_name1 = f'U_AdvaNuclear4000_Year2019_US_{cty_idx}_Co2Cons'; 
+    #     table_AdvaNuclear_4000_replace_resour += [Get_Table(case_name1, repeat_list = co2_cons, data_path = data_find, tech_name_list=tech_list_new)]
+    #     case_name2 = f'U_AdvaNuclear4000_Year2019_{cty_idx}_US_Co2Cons'; 
+    #     table_AdvaNuclear_4000_replace_demand += [Get_Table(case_name2, repeat_list = co2_cons, data_path = data_find, tech_name_list=tech_list_new)]
+    # with open('Scenario13_210929.pickle', 'wb') as handle:
+    #     pickle.dump([table_AdvaNuclear_4000_replace_demand, table_AdvaNuclear_4000_replace_resour], handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    with open('Scenario13_210929.pickle', 'rb') as handle:
+        table_AdvaNuclear_4000_replace_demand, table_AdvaNuclear_4000_replace_resour = pickle.load(handle) 
+
+
+    # Plot
+    xlist = np.array([100, 98, 96, 94, 92, 90, 88, 86, 84, 82, 80, 78, 76, 74, 72, 70, 68, 66, 64, 62, 
+                       60, 58, 56, 54, 52, 50, 48, 46, 44, 42, 40, 38, 36, 34, 32, 30, 28, 26, 24, 22, 
+                       20, 18, 16, 14, 12, 10, 8,  6,  4,  2,  1, 0.1, 0.01, 0.001, 0])/100
+    x_axis = 1 - 0.5**( np.log(xlist)/np.log(0.2) )
+    xticks_addition_org = np.array([50.0, 10.0, 1.0])/100
+    xticks_addition_cov = 1 - 0.5**( np.log(xticks_addition_org)/np.log(0.2) )
+    xticks = np.r_[[0, 0.5, 0.75, 1.0], xticks_addition_cov]
+
+    def nonan(input):
+        input[input==0] = np.nan
+        return input
+
+    # Costs
+    def plot_cost(CurrentCase, default_case_name):
+        ax = plt.subplot(111)
+        y_lists = [np.array(CurrentCase['natgas_tot']), 
+            np.array(CurrentCase['natgas_ccs_tot']), 
+            np.array(CurrentCase['solar_fix']), 
+            np.array(CurrentCase['wind_fix']), 
+            np.array(CurrentCase['nuclear_fix'])+np.array(CurrentCase['nuclear_generator_REAmatch_fix']),
+            np.array(CurrentCase['heat_storage_fix'])+np.array(CurrentCase['nuclear_generator_TESmatch_fix']),
+            np.array(CurrentCase['storage_fix']),
+            np.array(CurrentCase['lost_load_var'])]
+        y_color = ['black', 'grey', 'wheat', 'skyblue', 'tomato', 'indigo', 'plum', 'cadetblue']
+
+        ax.stackplot(x_axis, y_lists, colors=y_color)
+        ax.plot(x_axis, np.array(CurrentCase['system_cost']), color='black', linestyle='--')
+        ax.plot(x_axis, np.zeros(len(x_axis)), color='black')
+        ax.set_xlabel('Emissions reduction constration (%)', fontsize=14)
+        ax.set_ylabel('System cost ($/kWh)', fontsize=14)
+        ax.set_title('With TES case', fontsize=18, y=1.05)
+        ax.xaxis.labelpad = 8
+        ax.yaxis.labelpad = 8
+        ax.set_xticks( xticks )
+        ax.set_xticklabels( ['0', '80', '96', '100', '50', '90', '99'] )
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 0.10)
+        # plt.show()
+        plt.savefig(default_case_name+'.ps')
+        plt.clf()
+
+    for cty_idx in range(len(TwoLettersCode)):
+        plot_cost(table_AdvaNuclear_4000_replace_demand[cty_idx], f'table_AdvaNuclear_4000_replace_demand_{TwoLettersCode[cty_idx]}')
+        plot_cost(table_AdvaNuclear_4000_replace_resour[cty_idx], f'table_AdvaNuclear_4000_replace_resour_{TwoLettersCode[cty_idx]}')
+    # """
+
+
+    # """
+    # No nuclear curtailments dispatch
+    # import numpy as np, pickle, os, matplotlib.pyplot as plt
+    # from Postprocess_func import get_case_dispatch
+    # from scipy import stats
+    from Postprocess_func import get_data_2
+
+    data_find1 = '/Volumes/My Passport/MEM_AdvNuc/SingleCountryResults3/'
+    data_find2 = '/Volumes/My Passport/MEM_AdvNuc/Nuclear_revision_2nd_round/'
     
+    name1 = 'U_AdvaNuclear_Year2019_US_Co2Cons'
+    name2 = 'U_AdvaNuclear4000_Year2019_US_Co2Cons'
+    name3 = 'U_AdvaNuclear_NoNuclear_Year2019_US_Co2Cons'
+    name4 = 'U_AdvaNuclear4000_NoNuclear_Year2019_US_Co2Cons'
+
+    co2_cons = np.array([1e24, 98, 96, 94, 92, 90, 88, 86, 84, 82, 
+                           80, 78, 76, 74, 72, 70, 68, 66, 64, 62, 
+                           60, 58, 56, 54, 52, 50, 48, 46, 44, 42, 
+                           40, 38, 36, 34, 32, 30, 28, 26, 24, 22, 
+                           20, 18, 16, 14, 12, 10, 8,  6,  4,  2,  1, 0.1, 0.01, 0.001, 0])
+
+    # system_cost, main_node_curtailment = np.zeros([4, len(co2_cons)]), np.zeros([4, len(co2_cons)])
+    # for case_idx in range(len(co2_cons)):
+    #     print (case_idx)
+    #     system_cost[0, case_idx], main_node_curtailment[0, case_idx] = get_data_2(name1 + str(co2_cons[case_idx]), data_find1, -1)
+    #     system_cost[1, case_idx], main_node_curtailment[1, case_idx] = get_data_2(name2 + str(co2_cons[case_idx]), data_find1, -1)
+    #     system_cost[2, case_idx], main_node_curtailment[2, case_idx] = get_data_2(name3 + str(co2_cons[case_idx]), data_find2, -1)
+    #     system_cost[3, case_idx], main_node_curtailment[3, case_idx] = get_data_2(name4 + str(co2_cons[case_idx]), data_find2, -1)
+    # with open('Scenario14_210929.pickle', 'wb') as handle:
+    #     pickle.dump([system_cost, main_node_curtailment], handle, protocol=pickle.HIGHEST_PROTOCOL)
+    with open('Scenario14_210929.pickle', 'rb') as handle:
+        system_cost, main_node_curtailment = pickle.load(handle) 
+
+    xlist = np.array([100, 98, 96, 94, 92, 90, 88, 86, 84, 82, 80, 78, 76, 74, 72, 70, 68, 66, 64, 62, 
+                       60, 58, 56, 54, 52, 50, 48, 46, 44, 42, 40, 38, 36, 34, 32, 30, 28, 26, 24, 22, 
+                       20, 18, 16, 14, 12, 10, 8,  6,  4,  2,  1, 0.1, 0.01, 0.001, 0])/100
+    x_axis = 1 - 0.5**( np.log(xlist)/np.log(0.2) )
+    xticks_addition_org = np.array([50.0, 10.0, 1.0])/100
+    xticks_addition_cov = 1 - 0.5**( np.log(xticks_addition_org)/np.log(0.2) )
+    xticks = np.r_[[0, 0.5, 0.75, 1.0], xticks_addition_cov]
+
+
+    ax1 = plt.subplot(121)
+    ax1.plot(x_axis, main_node_curtailment[0], color='firebrick', linestyle='solid')
+    ax1.plot(x_axis, main_node_curtailment[1], color='royalblue', linestyle='solid')
+    ax1.plot(x_axis, main_node_curtailment[2], color='black', linestyle='solid')
+    ax1.set_xticks( xticks )
+    ax1.set_xticklabels( ['0', '80', '96', '100', '50', '90', '99'] )
+    ax1.set_xlim(0, 1)
+    ax1.set_ylim(0, 1.2)
+
+    ax2 = plt.subplot(122)
+    diff_emissions = (xlist - xlist[0]) / 100 * 0.49 * 1 * 8760
+    marginal_system_cost = np.zeros([4, len(co2_cons)])
+    for idx in range(4):
+        marginal_system_cost[idx, :] = ( system_cost[idx, :] - system_cost[idx, 0] ) / diff_emissions * (-1) * 1000
+    ax2.plot(x_axis, marginal_system_cost[0], color='firebrick', linestyle='solid')
+    ax2.plot(x_axis, marginal_system_cost[1], color='royalblue', linestyle='solid')
+    ax2.plot(x_axis, marginal_system_cost[2], color='black', linestyle='dashed')
+    ax2.set_xticks( xticks )
+    ax2.set_xticklabels( ['0', '80', '96', '100', '50', '90', '99'] )
+    ax2.set_xlim(0, 1)
+    ax2.set_ylim(0, 1.6)
+    plt.show()
+    # plt.savefig('Curtail_MSC.ps')
+    plt.clf()
+
+    # """
 
 
 
     # %%
+
+    

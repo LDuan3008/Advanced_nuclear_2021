@@ -272,6 +272,53 @@ def core_model(case_dic, tech_list):
             if tech_name in ['natgas', 'natgas_ccs']:
                 totDisp += cvx.sum(dispatch)
                 if flag_dispatch == False: flag_dispatch = True
+
+        
+        #----------------------------------------------------------------------
+        # Direct air capture
+        # Capacity and dispatch both represent electricity used by dac to remove CO2 
+        # Variable cost of CO2 removal per ton CO2 = 1000tCO2/kgCO2 * var_cost / var_CO2
+        # var_co2 is in units of kgCO2/kWh
+        # var_cost is in units of $/kWh
+        
+        elif tech_type == 'dac':
+            if tech_dic.get('capacity',-1) >= 0:
+                capacity = tech_dic['capacity']
+            else:
+                capacity = cvx.Variable(1)
+                constraints += [ capacity >= 0 ]
+                constraint_list += [tech_name + ' capacity_ge_0']
+                if tech_dic.get('max_capacity',-1) > 0:
+                    max_capacity = tech_dic['max_capacity']
+                    constraints += [ capacity <= max_capacity ]
+                    constraint_list += [tech_name + ' capacity_le_max']
+            dispatch_in = cvx.Variable(num_time_periods) 
+            constraints += [ dispatch_in >= 0 ]
+            constraint_list += [tech_name + ' dispatch_in_ge_0']
+            if 'series' in tech_dic:
+                constraints += [ dispatch_in <= capacity * tech_dic['series'] ]
+                constraint_list += [tech_name + ' dispatch_le_capacity_x_series']
+            else:
+                constraints += [ dispatch_in <= capacity ]
+                constraint_list += [tech_name + ' dispatch_le_capacity']
+                
+            capacity_dic[tech_name] = capacity
+            dispatch_dic[tech_name] = dispatch_in 
+            node_balance[node_from] += - dispatch_in  # positive = how much it consumes
+
+            if 'var_co2' in tech_dic:
+                fnc2min +=  cvx.sum(dispatch_in * tech_dic['var_cost']) + cvx.sum(dispatch_in * case_dic['co2_price'] * tech_dic['var_co2']) 
+                totCO2e +=  cvx.sum(dispatch_in * tech_dic['var_co2']) 
+                if flag_emissions == False: flag_emissions = True 
+            else:
+                fnc2min +=  cvx.sum(dispatch_in * tech_dic['var_cost'])
+            
+            if 'fixed_co2' in tech_dic:
+                fnc2min += capacity * tech_dic['fixed_cost'] * num_time_periods + capacity * tech_dic['fixed_co2'] * case_dic['co2_price']
+            else:
+                fnc2min += capacity * tech_dic['fixed_cost'] * num_time_periods
+
+
         
         #----------------------------------------------------------------------
         # Storage

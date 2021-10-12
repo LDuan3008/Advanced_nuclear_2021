@@ -5,13 +5,14 @@ import pickle, os, sys
 from scipy import stats
 
 
-category1 = ['natgas', 'natgas_ccs', 'natgas_fixed', 'natgas_ccs_fixed']
+category1 = ['natgas', 'natgas_ccs', 'natgas_fixed', 'natgas_ccs_fixed', 'dac']
 category2 = ['solar',       'wind',       'storage',       'conventional_nuclear',       'Resistant Heater',
              'solar_fixed', 'wind_fixed', 'storage_fixed', 'conventional_nuclear_fixed', 'Resistant Heater_fixed']
 category3 = {'advanced_nuclear':['nuclear', 'nuclear_generator', 'heat_storage'],
              'advanced_nuclear_fixed':['nuclear_fixed', 'nuclear_generator_fixed', 'heat_storage_fixed']}
 category4 = ['lost_load']
 category5 = ['shift_load']
+category6 = {'pgp':['to_PGP', 'PGP_storage', 'from_PGP']}
 
 def initial_keys(info, keylist):
     for key in keylist:
@@ -67,6 +68,27 @@ def Update_info(info, category, results_tech_dic, results_case_dic, results_time
     if category == 'others':
         info['system_cost'].append(results_case_dic['system_cost'])
         info['co2_emissions'].append(results_case_dic['co2_emissions'])
+    if category in category6:
+        name_list = category6[category]
+        # To_PGP
+        to_pgp_eff = cost['to_PGP_eff']
+        to_pgp_cap = results_tech_dic[name_list[0]+' capacity'] * to_pgp_eff
+        to_pgp_cos = results_tech_dic[name_list[0]+' capacity'] * cost[name_list[0]+'_fix']
+        info[name_list[0]+'_cap'].append(to_pgp_cap)
+        info[name_list[0]+'_fix'].append(to_pgp_cos)
+        # PGP_storage
+        pgp_storage_cap = results_tech_dic[name_list[1]+' capacity']
+        pgp_storage_cos = results_tech_dic[name_list[1]+' capacity'] * cost[name_list[1]+'_fix']
+        info[name_list[1]+'_cap'].append(pgp_storage_cap)
+        info[name_list[1]+'_fix'].append(pgp_storage_cos)
+        # From_PGP
+        from_pgp_eff = cost['from_PGP_eff']
+        from_pgp_cap = results_tech_dic[name_list[2]+' capacity'] * from_pgp_eff
+        from_pgp_cos = results_tech_dic[name_list[2]+' capacity'] * cost[name_list[2]+'_fix']
+        info[name_list[2]+'_cap'].append(from_pgp_cap)
+        info[name_list[2]+'_fix'].append(from_pgp_cos)
+
+
     
     # Now add emissions calculation:
     if category in ['natgas', 'natgas_ccs', 'solar', 'wind', 'storage', 'conventional_nuclear', 'advanced_nuclear']:
@@ -121,6 +143,12 @@ def Get_Table(default_case_name, **kwargs):
             initial_keys(info, [tech_idx+'_mean'])
         if tech_idx in category5:
             initial_keys(info, [tech_idx+'_tot'])
+        if tech_idx in category6:
+            name_list = category6[tech_idx]
+            initial_keys(info, [name_list[0]+'_cap', name_list[0]+'_fix'])
+            initial_keys(info, [name_list[1]+'_cap', name_list[1]+'_fix'])
+            initial_keys(info, [name_list[2]+'_cap', name_list[2]+'_fix'])
+            initial_keys(info, [tech_idx+'_emis'])
 
 
     def get_individual_case_result(case_name):
@@ -133,7 +161,7 @@ def Get_Table(default_case_name, **kwargs):
         with open(data_path+case_name+case_name_open, 'rb') as handle:
             [[input_case_dic,  input_tech_list,  input_time_dic],
              [results_case_dic,  results_tech_dic,  results_time_dic]] = pickle.load(handle)
-        
+
         if 'demand series' not in info.keys():
             info['demand series'] = input_time_dic['demand series']
             info['wind series'] = input_time_dic['wind series']
@@ -164,6 +192,7 @@ def Get_Table(default_case_name, **kwargs):
                 get_individual_case_result(case_name)
             else:
                 case_name = default_case_name + str(repeat_n) + '/'
+                # print (case_name)
                 get_individual_case_result(case_name)
     else:
         case_name = default_case_name + '/'
@@ -207,6 +236,7 @@ def get_case_dispatch(case_name, data_find, which_nuclear):
     info['storage_dispatch'] = results_time_dic['storage dispatch']
     info['storage_in_dispatch'] = results_time_dic['storage in dispatch']
     info['storage_stored'] = results_time_dic['storage stored']
+    info['main_node_curtailment'] = results_time_dic['main_node_curtailment dispatch']
 
     if which_nuclear == 0:
         info['nuclear_potential'] = results_time_dic['demand potential'] * 0 + results_tech_dic['nuclear capacity'] * 0.370800284
@@ -223,7 +253,12 @@ def get_case_dispatch(case_name, data_find, which_nuclear):
         info['heat_storage_dispatch'] = results_time_dic['demand potential'] * 0 + 0
         info['heat_storage_in_dispatch'] = results_time_dic['demand potential'] * 0 + 0
         info['heat_storage_stored'] = results_time_dic['demand potential'] * 0 + 0
-    
+
+    if which_nuclear == -1:
+        info['nuclear_potential'] = results_time_dic['demand potential'] * 0
+        info['heat_storage_dispatch'] = results_time_dic['demand potential'] * 0 + 0
+        info['heat_storage_in_dispatch'] = results_time_dic['demand potential'] * 0 + 0
+        info['heat_storage_stored'] = results_time_dic['demand potential'] * 0 + 0
 
 
     # Fix Storage dispatch
@@ -274,3 +309,22 @@ def get_case_dispatch(case_name, data_find, which_nuclear):
         print ('Now only consider cases with TES')
         info['percentage'] = -999
     return info
+
+
+
+
+def get_data_2(case_name, data_find, which_nuclear):
+
+    file_list = os.listdir(data_find+case_name)
+    for file in file_list:
+        if file[-6:] == "pickle": 
+            case_name_open = file
+            break
+    with open(data_find + case_name + '/' + case_name_open, 'rb') as handle:
+        [[input_case_dic,  input_tech_list,  input_time_dic],
+         [results_case_dic,  results_tech_dic,  results_time_dic]] = pickle.load(handle)
+
+    system_cost = results_case_dic['system_cost']
+    main_node_curtailment = np.mean(results_time_dic['main_node_curtailment dispatch'])
+
+    return system_cost, main_node_curtailment
